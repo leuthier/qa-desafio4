@@ -1,0 +1,2 @@
+spec: tests/**/*.test.js
+timeout: 1000

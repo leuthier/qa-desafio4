@@ -1,0 +1,196 @@
+openapi: 3.0.3
+info:
+  title: Concessionária API
+  description: API para cadastro de veículos com validação de placa brasileira e Mercosul.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+
+paths:
+  /veiculos:
+    get:
+      summary: Listar veículos
+      description: Retorna todos os veículos cadastrados no sistema.
+      responses:
+        '200':
+          description: Lista de veículos (pode ser vazia).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VeiculoResponse'
+              example:
+                - id: 1
+                  marca: Toyota
+                  modelo: Corolla
+                  ano: 2020
+                  preco: 85000
+                  placa: ABC-1234
+                - id: 2
+                  marca: Honda
+                  modelo: Civic
+                  ano: 2023
+                  preco: 120000
+                  placa: ABC1D23
+
+    post:
+      summary: Cadastrar veículo
+      description: Cria um novo veículo no sistema. Placa deve ser única.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VeiculoInput'
+            examples:
+              placaAntiga:
+                summary: Placa formato antigo
+                value:
+                  marca: Toyota
+                  modelo: Corolla
+                  ano: 2020
+                  preco: 85000
+                  placa: ABC-1234
+              placaMercosul:
+                summary: Placa formato Mercosul
+                value:
+                  marca: Honda
+                  modelo: Civic
+                  ano: 2023
+                  preco: 120000
+                  placa: ABC1D23
+      responses:
+        '201':
+          description: Veículo cadastrado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VeiculoResponse'
+              example:
+                id: 1
+                marca: Toyota
+                modelo: Corolla
+                ano: 2020
+                preco: 85000
+                placa: ABC-1234
+        '400':
+          description: Dados inválidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                marcaAusente:
+                  summary: Marca ausente
+                  value:
+                    error: marca obrigatória
+                modeloAusente:
+                  summary: Modelo ausente
+                  value:
+                    error: modelo obrigatório
+                anoInvalido:
+                  summary: Ano fora do intervalo
+                  value:
+                    error: ano deve ser inteiro entre 1886 e 2027
+                precoInvalido:
+                  summary: Preço inválido
+                  value:
+                    error: preco deve ser número maior que 0
+                placaAusente:
+                  summary: Placa ausente
+                  value:
+                    error: placa obrigatória
+                placaFormato:
+                  summary: Formato de placa inválido
+                  value:
+                    error: placa inválida
+        '409':
+          description: Placa já cadastrada no sistema.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponse'
+              example:
+                error: Conflict
+                message: A placa ABC-1234 já está cadastrada no sistema.
+
+components:
+  schemas:
+    VeiculoInput:
+      type: object
+      required:
+        - marca
+        - modelo
+        - ano
+        - preco
+        - placa
+      properties:
+        marca:
+          type: string
+          description: Fabricante do veículo.
+          example: Toyota
+        modelo:
+          type: string
+          description: Modelo do veículo.
+          example: Corolla
+        ano:
+          type: integer
+          description: Ano de fabricação (1886–2027).
+          minimum: 1886
+          maximum: 2027
+          example: 2020
+        preco:
+          type: number
+          format: float
+          description: Preço do veículo (deve ser maior que 0).
+          minimum: 0
+          exclusiveMinimum: true
+          example: 85000
+        placa:
+          type: string
+          description: >
+            Placa do veículo. Aceita dois formatos:
+            - Antigo: `AAA-0000` (3 letras, hífen, 4 dígitos)
+            - Mercosul: `AAA0A00` (3 letras, 1 dígito, 1 letra, 2 dígitos)
+          pattern: '^([A-Z]{3}-\d{4}|[A-Z]{3}\d[A-Z]\d{2})$'
+          example: ABC-1234
+
+    VeiculoResponse:
+      allOf:
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+              description: Identificador único gerado pelo servidor.
+              example: 1
+        - $ref: '#/components/schemas/VeiculoInput'
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Mensagem descrevendo o motivo da rejeição.
+          example: placa inválida
+
+    ConflictResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          enum:
+            - Conflict
+          example: Conflict
+        message:
+          type: string
+          description: Detalhe do conflito, incluindo a placa duplicada.
+          example: A placa ABC-1234 já está cadastrada no sistema.

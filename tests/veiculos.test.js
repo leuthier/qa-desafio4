@@ -268,5 +268,71 @@ describe('POST /veiculos', () => {
       expect(res.status).to.equal(400);
       expect(res.body).to.have.property('error');
     });
+
+    it('Rejeitar preco como NaN', async () => {
+      const payload = { ...validBase, preco: NaN, placa: 'EDG-0009' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('error');
+    });
+
+    it('Rejeitar preco como Infinity', async () => {
+      const payload = { ...validBase, preco: Infinity, placa: 'EDG-0010' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('error');
+    });
+
+    it('Rejeitar marca como número', async () => {
+      const payload = { ...validBase, marca: 123, placa: 'EDG-0011' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('error');
+    });
+
+    it('Rejeitar modelo como número', async () => {
+      const payload = { ...validBase, modelo: 456, placa: 'EDG-0012' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('error');
+    });
+  });
+
+  // ── BIG INPUTS ─────────────────────────────────────────────────────────────
+
+  describe('BIG-INPUTS', () => {
+    it('Rejeitar marca com mais de 100 caracteres', async () => {
+      const payload = { ...validBase, marca: 'A'.repeat(101), placa: 'BIG-0001' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('error');
+    });
+
+    it('Rejeitar modelo com mais de 100 caracteres', async () => {
+      const payload = { ...validBase, modelo: 'B'.repeat(101), placa: 'BIG-0002' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('error');
+    });
+
+    it('Aceitar marca com exatamente 100 caracteres', async () => {
+      const payload = { ...validBase, marca: 'A'.repeat(100), placa: 'BIG-0003' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(201);
+    });
+
+    it('Aceitar modelo com exatamente 100 caracteres', async () => {
+      const payload = { ...validBase, modelo: 'B'.repeat(100), placa: 'BIG-0004' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(201);
+    });
   });
 });

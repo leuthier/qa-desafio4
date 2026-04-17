@@ -20,7 +20,9 @@ function validate(body) {
   const { marca, modelo, ano, preco, placa } = body;
 
   if (!marca || typeof marca !== 'string') return 'marca obrigatória';
+  if (marca.length > 100) return 'marca deve ter no máximo 100 caracteres';
   if (!modelo || typeof modelo !== 'string') return 'modelo obrigatório';
+  if (modelo.length > 100) return 'modelo deve ter no máximo 100 caracteres';
   if (!Number.isInteger(ano) || ano < 1886 || ano > 2027) return 'ano deve ser inteiro entre 1886 e 2027';
   if (typeof preco !== 'number' || preco <= 0) return 'preco deve ser número maior que 0';
   if (!placa || typeof placa !== 'string') return 'placa obrigatória';

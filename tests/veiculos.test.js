@@ -8,7 +8,7 @@ const validBase = {
   marca: 'Toyota',
   modelo: 'Corolla',
   ano: 2020,
-  preco: 85000,
+  preco: 85000.50,
 };
 
 describe('GET /veiculos', () => {
@@ -20,7 +20,7 @@ describe('GET /veiculos', () => {
   });
 
   it('Listar veículos retorna veículo recém-cadastrado com todos os campos', async () => {
-    const payload = { marca: 'Ford', modelo: 'Ka', ano: 2019, preco: 45000, placa: 'FOR-0001' };
+    const payload = { marca: 'Ford', modelo: 'Ka', ano: 2019, preco: 45000.50, placa: 'FOR-0001' };
 
     await request(app).post(BASE).send(payload);
     const res = await request(app).get(BASE);
@@ -90,6 +90,14 @@ describe('POST /veiculos', () => {
       expect(res.body).to.have.property('preco', 0.01);
     });
 
+    it('Aceitar preco decimal simples (9.5)', async () => {
+      const payload = { ...validBase, preco: 9.5, placa: 'FLT-0004' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(201);
+      expect(res.body.preco).to.equal(9.5);
+    });
+
     it('Aceitar ano no limite inferior (1886)', async () => {
       const payload = { ...validBase, ano: 1886, placa: 'EDG-0007' };
       const res = await request(app).post(BASE).send(payload);
@@ -148,8 +156,6 @@ describe('POST /veiculos', () => {
     });
   });
 
-  // ── VALIDATION: ANO ────────────────────────────────────────────────────────
-
   describe('STATUS CODE - 400', () => {
     it('Rejeitar ano anterior a 1886', async () => {
       const payload = { ...validBase, ano: 1800, placa: 'MNO-3456' };
@@ -167,8 +173,6 @@ describe('POST /veiculos', () => {
       expect(res.body).to.have.property('error');
     });
 
-    // ── VALIDATION: PREÇO ──────────────────────────────────────────────────────
-
     it('Rejeitar preço igual a zero', async () => {
       const payload = { ...validBase, preco: 0, placa: 'STU-1234' };
       const res = await request(app).post(BASE).send(payload);
@@ -178,14 +182,12 @@ describe('POST /veiculos', () => {
     });
 
     it('Rejeitar preço negativo', async () => {
-      const payload = { ...validBase, preco: -1, placa: 'VWX-5678' };
+      const payload = { ...validBase, preco: -1.5, placa: 'VWX-5678' };
       const res = await request(app).post(BASE).send(payload);
 
       expect(res.status).to.equal(400);
       expect(res.body).to.have.property('error');
     });
-
-    // ── VALIDATION: PLACA ──────────────────────────────────────────────────────
 
     it('Rejeitar placa com formato inválido', async () => {
       const payload = { ...validBase, placa: 'INVALID' };
@@ -206,7 +208,7 @@ describe('POST /veiculos', () => {
       expect(res.status).to.equal(409);
       expect(res.body).to.deep.equal({
         error: 'Conflict',
-        message: 'A placa YZA-9999 já está cadastrada no sistema.',
+        message: 'Placa YZA-9999 já cadastrada no sistema.',
       });
     });
   });
@@ -224,14 +226,6 @@ describe('POST /veiculos', () => {
 
     it('Rejeitar ano como string numérica', async () => {
       const payload = { ...validBase, ano: '2020', placa: 'EDG-0002' };
-      const res = await request(app).post(BASE).send(payload);
-
-      expect(res.status).to.equal(400);
-      expect(res.body).to.have.property('error');
-    });
-
-    it('Rejeitar preco como string numérica', async () => {
-      const payload = { ...validBase, preco: '85000', placa: 'EDG-0003' };
       const res = await request(app).post(BASE).send(payload);
 
       expect(res.status).to.equal(400);
@@ -269,7 +263,7 @@ describe('POST /veiculos', () => {
       expect(res.body).to.have.property('error');
     });
 
-    it('Rejeitar preco como NaN', async () => {
+    it('Rejeitar preco como NaN (serializado para null)', async () => {
       const payload = { ...validBase, preco: NaN, placa: 'EDG-0009' };
       const res = await request(app).post(BASE).send(payload);
 
@@ -277,7 +271,7 @@ describe('POST /veiculos', () => {
       expect(res.body).to.have.property('error');
     });
 
-    it('Rejeitar preco como Infinity', async () => {
+    it('Rejeitar preco como Infinity (serializado para null)', async () => {
       const payload = { ...validBase, preco: Infinity, placa: 'EDG-0010' };
       const res = await request(app).post(BASE).send(payload);
 
@@ -290,11 +284,19 @@ describe('POST /veiculos', () => {
       const res = await request(app).post(BASE).send(payload);
 
       expect(res.status).to.equal(400);
-      expect(res.body).to.have.property('error');
+      expect(res.body).to.have.property('error', 'marca deve ser do tipo texto');
     });
 
     it('Rejeitar modelo como número', async () => {
       const payload = { ...validBase, modelo: 456, placa: 'EDG-0012' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('error', 'modelo deve ser do tipo texto');
+    });
+
+    it('Rejeitar preco como string', async () => {
+      const payload = { ...validBase, preco: '123.01', placa: 'EDG-0013' };
       const res = await request(app).post(BASE).send(payload);
 
       expect(res.status).to.equal(400);
@@ -330,6 +332,21 @@ describe('POST /veiculos', () => {
 
     it('Aceitar modelo com exatamente 100 caracteres', async () => {
       const payload = { ...validBase, modelo: 'B'.repeat(100), placa: 'BIG-0004' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(201);
+    });
+
+    it('Rejeitar preco acima de Number.MAX_SAFE_INTEGER', async () => {
+      const payload = { ...validBase, preco: 9007199254740992, placa: 'BIG-0006' };
+      const res = await request(app).post(BASE).send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('error');
+    });
+
+    it('Aceitar preco igual a Number.MAX_SAFE_INTEGER (limite superior válido)', async () => {
+      const payload = { ...validBase, preco: 9007199254740991, placa: 'BIG-0007' };
       const res = await request(app).post(BASE).send(payload);
 
       expect(res.status).to.equal(201);

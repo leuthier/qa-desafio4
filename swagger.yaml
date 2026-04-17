@@ -26,13 +26,13 @@ paths:
                   marca: Toyota
                   modelo: Corolla
                   ano: 2020
-                  preco: 85000
+                  preco: 85000.50
                   placa: ABC-1234
                 - id: 2
                   marca: Honda
                   modelo: Civic
                   ano: 2023
-                  preco: 120000
+                  preco: 120000.00
                   placa: ABC1D23
 
     post:
@@ -51,7 +51,7 @@ paths:
                   marca: Toyota
                   modelo: Corolla
                   ano: 2020
-                  preco: 85000
+                  preco: 85000.50
                   placa: ABC-1234
               placaMercosul:
                 summary: Placa formato Mercosul
@@ -59,7 +59,7 @@ paths:
                   marca: Honda
                   modelo: Civic
                   ano: 2023
-                  preco: 120000
+                  preco: 120000.00
                   placa: ABC1D23
       responses:
         '201':
@@ -73,7 +73,7 @@ paths:
                 marca: Toyota
                 modelo: Corolla
                 ano: 2020
-                preco: 85000
+                preco: 85000.50
                 placa: ABC-1234
         '400':
           description: Dados inválidos.
@@ -86,10 +86,18 @@ paths:
                   summary: Marca ausente
                   value:
                     error: marca obrigatória
+                marcaTipoInvalido:
+                  summary: Marca não é string
+                  value:
+                    error: marca deve ser do tipo texto
                 modeloAusente:
                   summary: Modelo ausente
                   value:
                     error: modelo obrigatório
+                modeloTipoInvalido:
+                  summary: Modelo não é string
+                  value:
+                    error: modelo deve ser do tipo texto
                 anoInvalido:
                   summary: Ano fora do intervalo
                   value:
@@ -114,7 +122,7 @@ paths:
                 $ref: '#/components/schemas/ConflictResponse'
               example:
                 error: Conflict
-                message: A placa ABC-1234 já está cadastrada no sistema.
+                message: Placa ABC-1234 já cadastrada no sistema.
 
 components:
   schemas:
@@ -144,10 +152,12 @@ components:
         preco:
           type: number
           format: float
-          description: Preço do veículo (deve ser maior que 0).
-          minimum: 0
-          exclusiveMinimum: true
-          example: 85000
+          description: >
+            Preço do veículo em formato decimal (deve ser maior que 0).
+            Máximo: 9007199254740991 (Number.MAX_SAFE_INTEGER).
+          minimum: 0.01
+          maximum: 9007199254740991
+          example: 85000.50
         placa:
           type: string
           description: >

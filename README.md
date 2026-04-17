@@ -30,7 +30,7 @@ POST /veiculos request body (all fields required):
   - marca  (string, non-empty, max 100 characters)
   - modelo (string, non-empty, max 100 characters)
   - ano    (integer between 1886 and 2027, inclusive)
-  - preco  (finite number greater than 0)
+  - preco  (float number greater than 0, max 9007199254740991)
   - placa  (string, unique per system, two accepted formats):
       • Old format:    AAA-0000  (3 uppercase letters, hyphen, 4 digits)
       • Mercosul format: AAA0A00 (3 uppercase letters, 1 digit, 1 uppercase letter, 2 digits)
@@ -38,7 +38,7 @@ POST /veiculos request body (all fields required):
 HTTP responses:
   201 — vehicle created, returns full object including generated id
   400 — validation error, returns { error: "<message>" }
-  409 — duplicate plate, returns { error: "Conflict", message: "A placa <plate> já está cadastrada no sistema." }
+  409 — duplicate plate, returns { error: "Conflict", message: "Placa <plate> já cadastrada no sistema." }
 
 Also:
 - Add Swagger UI at /api-docs using swagger-ui-express and a swagger.yaml file (OpenAPI 3.0.3)
@@ -66,7 +66,7 @@ desafio-4-api-genai/
 │   ├── app.js          # Express app, routes, and validation logic
 │   └── server.js       # HTTP server entry point
 ├── tests/
-│   └── veiculos.test.js  # Mocha + Chai + Supertest test suite (36 tests)
+│   └── veiculos.test.js  # Mocha + Chai + Supertest test suite (39 tests)
 ├── swagger.yaml        # OpenAPI 3.0.3 specification
 ├── .mocharc.yml        # Mocha configuration
 └── package.json
@@ -130,7 +130,7 @@ Press Ctrl+C to stop the server
 ```bash
 curl -X POST http://localhost:3000/veiculos \
   -H "Content-Type: application/json" \
-  -d '{"marca":"Toyota","modelo":"Corolla","ano":2020,"preco":85000,"placa":"ABC-1234"}'
+  -d '{"marca":"Toyota","modelo":"Corolla","ano":2020,"preco":85000.50,"placa":"ABC-1234"}'
 ```
 
 Expected response (`201 Created`):
@@ -141,7 +141,7 @@ Expected response (`201 Created`):
   "marca": "Toyota",
   "modelo": "Corolla",
   "ano": 2020,
-  "preco": 85000,
+  "preco": 85000.5,
   "placa": "ABC-1234"
 }
 ```
@@ -150,10 +150,10 @@ Expected response (`201 Created`):
 
 | Field   | Type    | Rules                                              |
 |---------|---------|----------------------------------------------------|
-| marca   | string  | Required, non-empty, max 100 characters            |
-| modelo  | string  | Required, non-empty, max 100 characters            |
-| ano     | integer | Required, between 1886 and 2027 (inclusive)        |
-| preco   | number  | Required, finite, greater than 0                   |
+| marca   | string  | Required, non-empty, max 100 characters, must be string type |
+| modelo  | string  | Required, non-empty, max 100 characters, must be string type |
+| ano     | integer | Required, between 1886 and 2027 (inclusive)                  |
+| preco   | float   | Required, greater than 0, max 9007199254740991               |
 | placa   | string  | Required, unique, old or Mercosul format (see below) |
 
 ---
@@ -193,6 +193,7 @@ Expected output:
       ✔ Contém exatamente os campos id, marca, modelo, ano, preco, placa
       ✔ IDs de veículos distintos são únicos e incrementais
       ✔ Aceitar preco mínimo positivo (0.01)
+      ✔ Aceitar preco decimal simples (9.5)
       ✔ Aceitar ano no limite inferior (1886)
       ✔ Aceitar ano no limite superior (2027)
     CAMPOS OBRIGATORIOS AUSENTES - 400
@@ -212,22 +213,24 @@ Expected output:
     EDGE-CASES
       ✔ Rejeitar ano como número decimal (float)
       ✔ Rejeitar ano como string numérica
-      ✔ Rejeitar preco como string numérica
       ✔ Rejeitar marca como string vazia
       ✔ Rejeitar modelo como string vazia
       ✔ Rejeitar placa com letras minúsculas no formato antigo
       ✔ Rejeitar corpo completamente vazio
-      ✔ Rejeitar preco como NaN
-      ✔ Rejeitar preco como Infinity
+      ✔ Rejeitar preco como NaN (serializado para null)
+      ✔ Rejeitar preco como Infinity (serializado para null)
       ✔ Rejeitar marca como número
       ✔ Rejeitar modelo como número
-    big-inputs
+      ✔ Rejeitar preco como string
+    BIG-INPUTS
       ✔ Rejeitar marca com mais de 100 caracteres
       ✔ Rejeitar modelo com mais de 100 caracteres
       ✔ Aceitar marca com exatamente 100 caracteres
       ✔ Aceitar modelo com exatamente 100 caracteres
+      ✔ Rejeitar preco acima de Number.MAX_SAFE_INTEGER
+      ✔ Aceitar preco igual a Number.MAX_SAFE_INTEGER (limite superior válido)
 
-  36 passing (Xms)
+  39 passing (Xms)
 ```
 
 ### Test configuration

@@ -19,12 +19,16 @@ const PLACA_MERCOSUL = /^[A-Z]{3}\d[A-Z]\d{2}$/;
 function validate(body) {
   const { marca, modelo, ano, preco, placa } = body;
 
-  if (!marca || typeof marca !== 'string') return 'marca obrigatória';
+  if (marca === undefined || marca === null || marca === '') return 'marca obrigatória';
+  if (typeof marca !== 'string') return 'marca deve ser do tipo texto';
   if (marca.length > 100) return 'marca deve ter no máximo 100 caracteres';
-  if (!modelo || typeof modelo !== 'string') return 'modelo obrigatório';
+  if (modelo === undefined || modelo === null || modelo === '') return 'modelo obrigatório';
+  if (typeof modelo !== 'string') return 'modelo deve ser do tipo texto';
   if (modelo.length > 100) return 'modelo deve ter no máximo 100 caracteres';
   if (!Number.isInteger(ano) || ano < 1886 || ano > 2027) return 'ano deve ser inteiro entre 1886 e 2027';
-  if (typeof preco !== 'number' || preco <= 0) return 'preco deve ser número maior que 0';
+  if (preco === undefined || preco === null || typeof preco !== 'number' || isNaN(preco)) return 'preco obrigatório';
+  if (preco <= 0) return 'preco deve ser número maior que 0';
+  if (preco > Number.MAX_SAFE_INTEGER) return 'preco deve ser no máximo 9007199254740991';
   if (!placa || typeof placa !== 'string') return 'placa obrigatória';
   if (!PLACA_ANTIGA.test(placa) && !PLACA_MERCOSUL.test(placa)) return 'placa inválida';
   return null;
@@ -43,7 +47,7 @@ app.post('/veiculos', (req, res) => {
   if (veiculos.some(v => v.placa === placa)) {
     return res.status(409).json({
       error: 'Conflict',
-      message: `A placa ${placa} já está cadastrada no sistema.`,
+      message: `Placa ${placa} já cadastrada no sistema.`,
     });
   }
   const veiculo = { id: nextId++, marca, modelo, ano, preco, placa };
